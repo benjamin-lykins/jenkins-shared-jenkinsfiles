@@ -1,11 +1,6 @@
 pipeline {
 
   agent any
-  
-  environment {
-        AWS_ACCESS_KEY_ID="${access_key}"
-        AWS_SECRET_ACCESS_KEY="${secret_key}"
-    }
 
   stages {
 
@@ -13,7 +8,7 @@ pipeline {
 
       steps {
         
-        checkout poll: false, scm: [$class: 'GitSCM', branches: [[name: '*/main']], extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'tfRepo/']], userRemoteConfigs: [[url: 'https://github.com/benjamin-lykins/tf_code_creator.git']]]
+        checkout poll: false, scm: [$class: 'GitSCM', branches: [[name: '*/main']], extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'tfRepo/']], userRemoteConfigs: [[url: 'https://github.com/benjamin-lykins/terraform-test-plan.git']]]
 
       }
 
@@ -23,7 +18,7 @@ pipeline {
 
       steps {
 
-        sh 'cd tfRepo/; /opt/homebrew/bin/terraform init'
+        sh 'cd tfRepo/; /data/apps/terraform/latest/terraform init'
 
       }
 
@@ -32,15 +27,16 @@ pipeline {
     stage('Terraform Validate') {
 
       steps {
-        sh 'cd tfRepo/; /opt/homebrew/bin/terraform validate'
+        sh 'cd tfRepo/; /data/apps/terraform/latest/terraform validate'
       }
 
     }
 
     stage('Terraform Plan') {
+
       steps {
-        sh '''cd tfRepo/; /opt/homebrew/bin/terraform plan -var "environment=${environment}" -out=${BUILD_NUMBER}.plan'''
-        sh 'cd tfRepo/; /opt/homebrew/bin/terraform show -no-color ${BUILD_NUMBER}.plan>out.txt'
+        sh 'cd tfRepo/; /data/apps/terraform/latest/terraform plan -out=${BUILD_NUMBER}.plan'
+        sh 'cd tfRepo/; /data/apps/terraform/latest/terraform show -no-color ${BUILD_NUMBER}.plan>out.txt'
         
           
       }
@@ -58,7 +54,7 @@ pipeline {
        script {
                     def output = sh(returnStdout: true, script: 'cd tfRepo/; grep Plan: out.txt')
                     timeout(time: 15, unit: "MINUTES") {
-                        input message:"${output}", ok: 'Yes'
+                        input message: "${output}", ok: 'Yes'
                 }
         }
         
@@ -73,23 +69,7 @@ pipeline {
     stage('Terraform Apply') {
 
       steps {
-        sh 'cd tfRepo/; /opt/homebrew/bin/terraform apply -auto-approve ${BUILD_NUMBER}.plan'
-      }
-
-    }
-    
-    stage('Terraform - Configure Domains') {
-
-      steps {
-        sh 'cd tfRepo/pluto/; /opt/homebrew/bin/terraform init;/opt/homebrew/bin/terraform plan'
-      }
-
-    }
-    
-    stage('Cleanup') {
-
-      steps {
-        cleanWs()
+        sh 'cd tfRepo/; /data/apps/terraform/latest/terraform apply -auto-approve ${BUILD_NUMBER}.plan'
       }
 
     }
