@@ -1,7 +1,7 @@
 properties([
   parameters([
      stringParam(name: 'Name', defaultValue: ""),
-     boolParam(name: 'Name', defaultValue: true),
+     booleanParam(name: 'Name', defaultValue: true),
   ])
 ])
 
