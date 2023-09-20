@@ -1,7 +1,8 @@
 // Parameters for the build
 properties([
   parameters([
-     stringParam(name: 'Name', defaultValue: "No Name"),
+     stringParam(name: 'Name', defaultValue: ""),
+     boolParam(name: 'Name', defaultValue: true),
   ])
 ])
 
@@ -15,7 +16,8 @@ pipeline {
 
       steps {
         
-         echo 'Hello, ${params.Name}!'
+         echo 'Hello World!'
+         echo 'Jenkinsfile1'
 
       }
 

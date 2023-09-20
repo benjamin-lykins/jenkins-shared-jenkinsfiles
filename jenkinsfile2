@@ -1,12 +1,14 @@
 properties([
   parameters([
-     stringParam(name: 'Name', defaultValue: 'No Name'),
+     stringParam(name: 'Name', defaultValue: ""),
+     boolParam(name: 'Name', defaultValue: true),
   ])
 ])
 
 
 node {
     stage('Echo') {
-        echo 'Hello, ${params.Name}!'
+        echo 'Hello World!'
+        echo 'Jenkinsfile2'
     }
 }
