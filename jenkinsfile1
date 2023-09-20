@@ -1,13 +1,99 @@
 pipeline {
-    agent any
 
-    stages {
-        stage('Echo File Name') {
-            steps {
-                script {
-                    echo "The name of this Jenkinsfile is: Jenkinsfile1"
-                }
-            }
-        }
+  agent any
+  
+  environment {
+        AWS_ACCESS_KEY_ID="${access_key}"
+        AWS_SECRET_ACCESS_KEY="${secret_key}"
     }
+
+  stages {
+
+    stage('Checkout') {
+
+      steps {
+        
+        checkout poll: false, scm: [$class: 'GitSCM', branches: [[name: '*/main']], extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'tfRepo/']], userRemoteConfigs: [[url: 'https://github.com/benjamin-lykins/tf_code_creator.git']]]
+
+      }
+
+    }
+
+    stage('Terraform init') {
+
+      steps {
+
+        sh 'cd tfRepo/; /opt/homebrew/bin/terraform init'
+
+      }
+
+    }
+
+    stage('Terraform Validate') {
+
+      steps {
+        sh 'cd tfRepo/; /opt/homebrew/bin/terraform validate'
+      }
+
+    }
+
+    stage('Terraform Plan') {
+      steps {
+        sh '''cd tfRepo/; /opt/homebrew/bin/terraform plan -var "environment=${environment}" -out=${BUILD_NUMBER}.plan'''
+        sh 'cd tfRepo/; /opt/homebrew/bin/terraform show -no-color ${BUILD_NUMBER}.plan>out.txt'
+        
+          
+      }
+
+    }
+
+    stage('Terraform Approval') {
+
+      steps {
+          
+        // sh returnStdout: true, script: 'plan=`cat out.txt|grep Plan:`'
+        
+        sh 'cd tfRepo/; cat out.txt && grep Plan: out.txt'
+        
+       script {
+                    def output = sh(returnStdout: true, script: 'cd tfRepo/; grep Plan: out.txt')
+                    timeout(time: 15, unit: "MINUTES") {
+                        input message:"${output}", ok: 'Yes'
+                }
+        }
+        
+    //     timeout(time: 15, unit: "MINUTES") {
+	   //                 input message: '${b}', ok: 'Yes'
+	   //}
+
+      }
+
+    }
+
+    stage('Terraform Apply') {
+
+      steps {
+        sh 'cd tfRepo/; /opt/homebrew/bin/terraform apply -auto-approve ${BUILD_NUMBER}.plan'
+      }
+
+    }
+    
+    stage('Terraform - Configure Domains') {
+
+      steps {
+        sh 'cd tfRepo/pluto/; /opt/homebrew/bin/terraform init;/opt/homebrew/bin/terraform plan'
+      }
+
+    }
+    
+    stage('Cleanup') {
+
+      steps {
+        cleanWs()
+      }
+
+    }
+
+  }
+
 }
