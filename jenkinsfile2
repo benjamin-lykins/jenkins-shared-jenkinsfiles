@@ -1,79 +1,12 @@
-pipeline {
+properties([
+  parameters([
+     stringParam(name: 'Name', defaultValue: 'No Name'),
+  ])
+])
 
-  agent any
 
-  stages {
-
-    stage('Checkout') {
-
-      steps {
-        
-        checkout poll: false, scm: [$class: 'GitSCM', branches: [[name: '*/main']], extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'tfRepo/']], userRemoteConfigs: [[url: 'https://github.com/benjamin-lykins/terraform-test-plan.git']]]
-
-      }
-
+node {
+    stage('Echo') {
+        echo 'Hello, ${params.Name}!'
     }
-
-    stage('Terraform init') {
-
-      steps {
-
-        sh 'cd tfRepo/; /data/apps/terraform/latest/terraform init'
-
-      }
-
-    }
-
-    stage('Terraform Validate') {
-
-      steps {
-        sh 'cd tfRepo/; /data/apps/terraform/latest/terraform validate'
-      }
-
-    }
-
-    stage('Terraform Plan') {
-
-      steps {
-        sh 'cd tfRepo/; /data/apps/terraform/latest/terraform plan -out=${BUILD_NUMBER}.plan'
-        sh 'cd tfRepo/; /data/apps/terraform/latest/terraform show -no-color ${BUILD_NUMBER}.plan>out.txt'
-        
-          
-      }
-
-    }
-
-    stage('Terraform Approval') {
-
-      steps {
-          
-        // sh returnStdout: true, script: 'plan=`cat out.txt|grep Plan:`'
-        
-        sh 'cd tfRepo/; cat out.txt && grep Plan: out.txt'
-        
-       script {
-                    def output = sh(returnStdout: true, script: 'cd tfRepo/; grep Plan: out.txt')
-                    timeout(time: 15, unit: "MINUTES") {
-                        input message: "${output}", ok: 'Yes'
-                }
-        }
-        
-    //     timeout(time: 15, unit: "MINUTES") {
-	   //                 input message: '${b}', ok: 'Yes'
-	   //}
-
-      }
-
-    }
-
-    stage('Terraform Apply') {
-
-      steps {
-        sh 'cd tfRepo/; /data/apps/terraform/latest/terraform apply -auto-approve ${BUILD_NUMBER}.plan'
-      }
-
-    }
-
-  }
-
 }
