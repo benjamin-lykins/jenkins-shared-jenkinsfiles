@@ -1,0 +1,13 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Echo File Name') {
+            steps {
+                script {
+                    echo "The name of this Jenkinsfile is: Jenkinsfile2"
+                }
+            }
+        }
+    }
+}
